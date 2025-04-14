@@ -1,0 +1,157 @@
+{% extends 'bgremover/base.html' %}
+
+{% block title %}BG Remover - Remove Image Backgrounds{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container text-center">
+        <h1>Background Remover</h1>
+        <p class="lead">Remove backgrounds from your images instantly using AI</p>
+    </div>
+</section>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Upload an Image</h2>
+                    
+                    <form method="post" action="{% url 'remove_bg' %}" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        
+                        <div class="upload-box" id="dropArea">
+                            <img src="https://cdn-icons-png.flaticon.com/512/685/685809.png" alt="Upload" width="64" class="mb-3">
+                            <h4>Drag & Drop or Click to Upload</h4>
+                            <p class="text-muted">Supports JPG, JPEG, PNG (Max 5MB)</p>
+                            
+                            <div class="mt-3">
+                                <label for="{{ form.original_image.id_for_label }}" class="btn btn-primary">
+                                    Select Image
+                                </label>
+                                {{ form.original_image }}
+                            </div>
+                            
+                            {% if form.original_image.errors %}
+                            <div class="alert alert-danger mt-3">
+                                {{ form.original_image.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="preview-container" style="display: none;" class="text-center mb-3">
+                            <h5>Preview:</h5>
+                            <img id="image-preview" src="#" alt="Preview" class="img-fluid mt-2 mb-3" style="max-height: 300px; border-radius: 8px;">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="remove-preview">Remove</button>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" disabled>
+                                Remove Background
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">How it works</h5>
+                    <ol>
+                        <li>Upload an image with a subject whose background you want to remove</li>
+                        <li>Our AI-powered system will process your image</li>
+                        <li>Download the result with a transparent background</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageInput = document.getElementById('{{ form.original_image.id_for_label }}');
+        const submitBtn = document.getElementById('submit-btn');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removePreviewBtn = document.getElementById('remove-preview');
+        const dropArea = document.getElementById('dropArea');
+        
+        // Hide the file input and show custom UI
+        imageInput.style.display = 'none';
+        
+        // Check for file input change
+        imageInput.addEventListener('change', function() {
+            if (imageInput.files.length > 0) {
+                const file = imageInput.files[0];
+                validateAndPreviewFile(file);
+            }
+        });
+        
+        // Handle drag and drop
+        dropArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropArea.style.backgroundColor = '#f0f4ff';
+            dropArea.style.borderColor = '#4a6baf';
+        });
+        
+        dropArea.addEventListener('dragleave', function() {
+            dropArea.style.backgroundColor = '';
+            dropArea.style.borderColor = '#ccc';
+        });
+        
+        dropArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            
+            dropArea.style.backgroundColor = '';
+            dropArea.style.borderColor = '#ccc';
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                imageInput.files = e.dataTransfer.files;
+                validateAndPreviewFile(file);
+            }
+        });
+        
+        // Click on drop area to trigger file input
+        dropArea.addEventListener('click', function() {
+            imageInput.click();
+        });
+        
+        // Remove preview button
+        removePreviewBtn.addEventListener('click', function() {
+            imageInput.value = '';
+            previewContainer.style.display = 'none';
+            submitBtn.disabled = true;
+        });
+        
+        function validateAndPreviewFile(file) {
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG, JPEG, or PNG)');
+                imageInput.value = '';
+                return;
+            }
+            
+            // Check file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size exceeds 5MB limit');
+                imageInput.value = '';
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewContainer.style.display = 'block';
+                submitBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %} 
